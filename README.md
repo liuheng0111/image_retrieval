@@ -1,4 +1,4 @@
-#### Pipeline
+### Image Retrieval Pipeline
 - `data`: 数据集
     - `train`: 训练数据集，即用于图片搜索的图片库
     - `test`: 测试数据集，即 query 图片。初期，通过数据增强的方法生成测试数据集
@@ -9,7 +9,7 @@
     - `neural_network`: 神经网络算法
     - `other_features`: 其他的手工特征
     
-- `ann`: Approximate nearest neighbour search 近似最近邻搜索
+- `ann`: Approximate nearest neighbour search(ANN) 近似最近邻搜索
     - `tree`: tree based model
         - `kd_tree`
         - `bk_tree`
@@ -19,7 +19,7 @@
     
 - `utils`: 实用工具
     - `configures`: 配置
-    - `get_image_path`: 获取图片路径
+    - `read_image`: 读取图片数据
     - `img_download`: 下载图片
     - `evaluation`: 评价指标
     

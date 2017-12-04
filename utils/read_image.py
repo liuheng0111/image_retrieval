@@ -1,16 +1,25 @@
 # coding=utf-8
 
 
-import os
+import os, sys
 from PIL import Image
 import pickle
 from tqdm import tqdm
-# from .configures import *
+import numpy as np
+import platform
 
 
-DATA_ROOT = '/data/wangyuan/koubei_image/data'
+if 'Linux' in platform.platform():
+    if not '/data/wangyuan/image_retrieval' in sys.path:
+        sys.path.append('/data/wangyuan/image_retrieval')
+else:
+    if not '/Users/wangyuan_ucas/Desktop/DataScience/image_retrieval' in sys.path:
+        sys.path.append('/Users/wangyuan_ucas/Desktop/DataScience/image_retrieval')
+
+from utils.configures import *
 
 
+# TODO: delete the following codes
 def get_image_path(dir_path, istrain=True, force=False):
     """
     获取有效图片的路径列表
@@ -51,5 +60,35 @@ def get_image_path(dir_path, istrain=True, force=False):
     return valid_img_path
 
 
+def _check_img(path):
+    """
+    Check if the image path is valid
+    :param path: image path
+    :return: image if the path is valid else False
+    """
+    try:
+        Image.open(path)
+    except IOError:
+        print('ERROR: invalid image path: {}'.format(path))
+        return False
+    return True
+
+
+def read_image(dir_path):
+    """
+    read image
+    :param dir_path: directory path containing images
+    :return: image id and image
+    """
+    path_list = [path for path in os.listdir(dir_path) if not path.startswith('.')]
+    id_list = [path.split('.')[0] for path in path_list]
+    path_list = [os.path.join(dir_path, path) for path in path_list]
+    for idx, path in zip(id_list, path_list):
+        if _check_img(path):
+            yield idx, Image.open(path)
+
+
 if __name__ == '__main__':
-    img_paths = get_image_path(DATA_ROOT)
+    dir_path = os.path.join(DATA_ROOT, 'train')
+    for idx, image in read_image(dir_path):
+        print(idx, np.array(image).shape)

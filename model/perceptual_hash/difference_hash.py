@@ -2,8 +2,11 @@
 
 
 import fire
-import sys, os
+import sys
+import os
 import pickle
+import multiprocessing
+import platform
 from tqdm import tqdm
 
 try:
@@ -15,6 +18,19 @@ try:
     import wand.image
 except ImportError:
     wand = None
+
+if 'Linux' in platform.platform():
+    num_of_threads = 20
+    if not '/data/wangyuan/image_retrieval' in sys.path:
+        sys.path.append('/data/wangyuan/image_retrieval')
+else:
+    num_of_threads = 4
+    if not '/Users/wangyuan_ucas/Desktop/DataScience/image_retrieval' in sys.path:
+        sys.path.append('/Users/wangyuan_ucas/Desktop/DataScience/image_retrieval')
+
+from utils.read_image import read_image
+from utils.configures import *
+
 
 
 """
@@ -166,7 +182,7 @@ def load_image(filename):
         sys.exit(1)
 
 
-def test(filename=None, size=8, form='hex', pil=True):
+def _test(filename=None, size=8, form='hex', pil=True):
     """
     测试
     计算两张图片 hamming distance
@@ -177,7 +193,7 @@ def test(filename=None, size=8, form='hex', pil=True):
     :return:
     """
     if filename is None:
-        filename = ['../data/test3.png', '../data/test7.png']
+        filename = ['../data/10.png', '../data/12.png']
 
     if pil:
         try:
@@ -221,24 +237,38 @@ def test(filename=None, size=8, form='hex', pil=True):
 
 
 if __name__ == '__main__':
-    # 多个函数时，使用 fire 需要指定函数名
     # fire.Fire()
-    DATA_ROOT = '/data/wangyuan/koubei_image/data'
-    image_path_pickle_file = os.path.join(DATA_ROOT, 'image_path.pkl')
-    if not os.path.exists(image_path_pickle_file):
-        print('image path does not exist.')
-    else:
-        with open(image_path_pickle_file, 'rb') as f:
-            image_path = pickle.load(f)
 
-        image_dhash = {}
-        image_dhash_pickle_file = os.path.join(DATA_ROOT, 'image_dhash.pkl')
-        print('generate dhash...')
-        for path in tqdm(image_path):
-            idx = path.split('/')[-1].split('.')[0]
-            img = load_image(path)
-            dhash = dhash_int(img)
-            image_dhash[idx] = dhash
-        with open(image_dhash_pickle_file, 'wb') as f:
-            pickle.dump(image_dhash, f)
-        print('done.')
+    # TODO: delete codes below
+    # image_path_pickle_file = os.path.join(DATA_ROOT, 'image_path.pkl')
+    # if not os.path.exists(image_path_pickle_file):
+    #     print('image path does not exist.')
+    # else:
+    #     with open(image_path_pickle_file, 'rb') as f:
+    #         image_path = pickle.load(f)
+    #
+    #     image_dhash = {}
+    #     image_dhash_pickle_file = os.path.join(DATA_ROOT, 'image_dhash.pkl')
+    #     print('generate dhash...')
+    #     for path in tqdm(image_path):
+    #         idx = path.split('/')[-1].split('.')[0]
+    #         img = load_image(path)
+    #         dhash = dhash_int(img)
+    #         image_dhash[idx] = dhash
+    #     with open(image_dhash_pickle_file, 'wb') as f:
+    #         pickle.dump(image_dhash, f)
+    #     print('done.')
+
+    dhash_dict = {}
+    dir_path = os.path.join(DATA_ROOT, 'train')
+    dhash_pickle_file = os.path.join(DATA_ROOT, 'image_dhash.pkl')
+    print('generate dhash...')
+    p = multiprocessing.Pool(num_of_threads)
+    for idx, image in tqdm(read_image(dir_path)):
+        # dhash_dict[idx] = dhash_int(image, size=8)
+        dhash_dict[idx] = p.apply_async(dhash_int, args=(image, 8, )).get()
+    p.close()
+    p.join()
+    with open(dhash_pickle_file, 'wb') as f:
+        pickle.dump(dhash_dict, f)
+    print('done.')
